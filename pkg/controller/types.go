@@ -11,6 +11,7 @@ type Service struct {
 
 	log *logrus.Entry
 
-	clusterID string
+	clusterID      string
+	topologyRegion string
 	csi.UnimplementedControllerServer
 }

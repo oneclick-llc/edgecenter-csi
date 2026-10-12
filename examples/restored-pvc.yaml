@@ -3,7 +3,7 @@ kind: PersistentVolumeClaim
 metadata:
   name: restored-pvc
 spec:
-  storageClassName: csi-ec-hiiops
+  storageClassName: ec-moscow-standard
   accessModes:
     - ReadWriteOnce
   resources:

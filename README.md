@@ -13,7 +13,9 @@ This driver allows Kubernetes to access [Edgecenter Disks](https://edgecenter.ru
 
 ### Manual installation
 
-#### 1. Create a configmap and secret with your credentials [config.yaml](./deploy/manifests/config.yaml)
+#### 1. Create a config map and secret
+
+The controller creates one API client for each region. The region topology must match the region label on each node.
 
 ```yaml
 kind: Secret
@@ -22,12 +24,21 @@ metadata:
   name: csi-ec-plugin-config
   namespace: kube-system
 type: Opaque
-data:
-  config.yaml: |-
-    apiUrl: __CLOUD_API_URL__
+stringData:
+  config.yaml: |
+    apiUrl: https://api.edgecenter.ru/cloud
     projectID: __PROJECT_ID__
-    regionID: __REGION_ID__
     apiToken: __API_TOKEN__
+    regions:
+      - name: moscow
+        regionID: 10
+        topology: moscow
+      - name: moscow-2
+        regionID: 112
+        topology: moscow-2
+      - name: moscow-3
+        regionID: 116
+        topology: moscow-3
 ---
 kind: ConfigMap
 apiVersion: v1
@@ -38,12 +49,39 @@ data:
    CLUSTER_ID: "__K8S_CLUSTER_ID__"
 ```
 
-#### 2. Deploy the driver
+#### 2. Create one StorageClass for each region
+
+Use the same provisioner name in every class. Set the region ID and topology for that class.
+
+```yaml
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: ec-moscow-standard
+provisioner: csi.edgecenter.org
+volumeBindingMode: WaitForFirstConsumer
+parameters:
+  type: standard
+  csi.edgecenter.org/region-id: "10"
+allowedTopologies:
+  - matchLabelExpressions:
+      - key: topology.kubernetes.io/region
+        values:
+          - moscow
+```
+
+The `region-id` value must match one entry in `regions`. The topology value must match the region label on the node.
+
+#### 3. Deploy the driver
 
 ```bash
 cd deploy/manifests
 for i in $(ls *.yaml);do kubectl apply -f $i;done
 ```
+
+The sample node plugin targets Moscow. To add another region, copy `nodeplugin.yaml` once for that region.
+Set a unique DaemonSet name, the node selector, and `CSI_TOPOLOGY_REGION` to match the region label.
+Keep `CSI_DRIVER_NAME` equal to `csi.edgecenter.org` in every copy.
 
 #### 4. Test the CSI driver
 

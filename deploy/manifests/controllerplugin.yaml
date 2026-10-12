@@ -100,13 +100,17 @@ spec:
               name: socket-dir
 
         - name: ec-csi-plugin
-          image: ghcr.io/edge-center/edgecenter-csi:latest
+          image: ghcr.io/oneclick-llc/edgecenter-csi:latest
           env:
             - name: CLUSTER_ID
               valueFrom:
                 configMapKeyRef:
                   name: ec-csi-plugin-config
                   key: CLUSTER_ID
+            - name: CSI_ROLE
+              value: controller
+            - name: CSI_DRIVER_NAME
+              value: csi.edgecenter.org
           args:
             - csi-plugin
             - --endpoint=unix://csi/csi.sock

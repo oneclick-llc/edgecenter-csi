@@ -22,6 +22,7 @@ RUN apk update && apk upgrade --no-cache && \
 LABEL name="ec-csi-plugin" \
       description="Edgecenter CSI Plugin" \
       distribution-scope="public" \
+      org.opencontainers.image.source="https://github.com/oneclick-llc/edgecenter-csi" \
       summary="Edgecenter CSI Plugin" \
       help="none"
 

@@ -14,11 +14,18 @@ import (
 )
 
 var (
-	endpoint     string
-	pathToConfig string
-	cluster      string
-	config       edgecloudV2.CloudConfig
+	endpoint          string
+	pathToConfig      string
+	cluster           string
+	config            edgecloudV2.CloudConfig
+	configuredRegions []regionConfig
 )
+
+type regionConfig struct {
+	Name     string `mapstructure:"name"`
+	RegionID int    `mapstructure:"regionID"`
+	Topology string `mapstructure:"topology"`
+}
 
 func init() {
 	cobra.OnInitialize(initConfig)
@@ -43,18 +50,71 @@ var rootCmd = &cobra.Command{
 	Use:   "Edgecenter",
 	Short: "CSI based Edgecenter driver",
 	Run: func(cmd *cobra.Command, args []string) {
-		cloud, err := edgecloudV2.NewWithRetries(nil,
-			edgecloudV2.SetAPIKey(config.APIToken),
-			edgecloudV2.SetBaseURL(config.APIUrl),
-			edgecloudV2.SetProject(config.ProjectID),
-			edgecloudV2.SetRegion(config.RegionID),
-		)
-		if err != nil {
-			log.Fatalf("failed to create cloud client: %v", err)
-			return
+		role := os.Getenv("CSI_ROLE")
+		if role == "" {
+			role = "controller"
+		}
+		if role != "controller" && role != "node" {
+			log.Fatalf("CSI_ROLE must be controller or node, got %q", role)
+		}
+		if role == "controller" && config.APIToken == "" {
+			log.Fatalf("apiToken or CSI_API_TOKEN must be provided for the controller")
+		}
+
+		regions := configuredRegions
+		if len(regions) == 0 {
+			regions = []regionConfig{{RegionID: config.RegionID, Topology: os.Getenv("CSI_TOPOLOGY_REGION")}}
+		}
+		clouds := make(map[int]*edgecloudV2.Client, len(regions))
+		topologies := make(map[int]string, len(regions))
+		for _, region := range regions {
+			if region.RegionID <= 0 {
+				log.Fatalf("regionID must be positive for topology %q", region.Topology)
+			}
+			if region.Topology == "" {
+				log.Fatalf("topology must be provided for regionID %d", region.RegionID)
+			}
+			if _, exists := clouds[region.RegionID]; exists {
+				log.Fatalf("duplicate regionID %d", region.RegionID)
+			}
+			if role == "controller" {
+				cloud, err := edgecloudV2.NewWithRetries(nil,
+					edgecloudV2.SetAPIKey(config.APIToken),
+					edgecloudV2.SetBaseURL(config.APIUrl),
+					edgecloudV2.SetProject(config.ProjectID),
+					edgecloudV2.SetRegion(region.RegionID),
+				)
+				if err != nil {
+					log.Fatalf("failed to create cloud client for region %d: %v", region.RegionID, err)
+				}
+				clouds[region.RegionID] = cloud
+			}
+			topologies[region.RegionID] = region.Topology
+		}
+		if len(topologies) == 0 {
+			log.Fatalf("at least one EdgeCenter region must be configured")
+		}
+		if role == "controller" && len(clouds) == 0 {
+			log.Fatalf("at least one EdgeCenter API client must be configured")
+		}
+		if role == "node" {
+			topology := os.Getenv("CSI_TOPOLOGY_REGION")
+			if topology == "" {
+				log.Fatalf("CSI_TOPOLOGY_REGION must be provided for the node plugin")
+			}
+			found := false
+			for _, configured := range topologies {
+				if configured == topology {
+					found = true
+					break
+				}
+			}
+			if !found {
+				log.Fatalf("CSI_TOPOLOGY_REGION %q is not present in the region configuration", topology)
+			}
 		}
 		log.Printf("create new driver")
-		d := driver.New(cloud, cluster, true)
+		d := driver.New(clouds, topologies, cluster, true)
 		d.Start(endpoint)
 		d.Wait()
 	},
@@ -92,5 +152,10 @@ func initConfig() {
 	if err := viper.Unmarshal(&config); err != nil {
 		log.Fatalf("unable to decode the configuration: %s", err)
 	}
-
+	if err := viper.UnmarshalKey("regions", &configuredRegions); err != nil {
+		log.Fatalf("unable to decode regions: %s", err)
+	}
+	if config.APIToken == "" {
+		config.APIToken = os.Getenv("CSI_API_TOKEN")
+	}
 }

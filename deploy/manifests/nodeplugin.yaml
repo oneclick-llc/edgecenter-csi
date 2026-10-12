@@ -18,6 +18,7 @@ spec:
       serviceAccountName: ec-csi-node-sa
       nodeSelector:
         kubernetes.io/os: linux
+        topology.kubernetes.io/region: moscow
       hostNetwork: true
       tolerations:
         - operator: "Exists"
@@ -52,7 +53,7 @@ spec:
               mountPath: /csi
 
         - name: ec-csi-plugin
-          image: ghcr.io/edge-center/edgecenter-csi:latest
+          image: ghcr.io/oneclick-llc/edgecenter-csi:latest
           imagePullPolicy: "IfNotPresent"
           env:
             - name: CLUSTER_ID
@@ -60,6 +61,12 @@ spec:
                 configMapKeyRef:
                   name: ec-csi-plugin-config
                   key: CLUSTER_ID
+            - name: CSI_ROLE
+              value: node
+            - name: CSI_DRIVER_NAME
+              value: csi.edgecenter.org
+            - name: CSI_TOPOLOGY_REGION
+              value: moscow
           args:
             - csi-plugin
             - --endpoint=unix://csi/csi.sock
