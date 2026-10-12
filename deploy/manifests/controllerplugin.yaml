@@ -107,6 +107,10 @@ spec:
                 configMapKeyRef:
                   name: ec-csi-plugin-config
                   key: CLUSTER_ID
+            - name: CSI_ROLE
+              value: controller
+            - name: CSI_DRIVER_NAME
+              value: csi.edgecenter.org
           args:
             - csi-plugin
             - --endpoint=unix://csi/csi.sock

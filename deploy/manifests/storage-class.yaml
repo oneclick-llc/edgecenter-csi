@@ -1,26 +1,107 @@
----
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:
-  name: ec-csi-standard
+  name: ec-moscow-standard
 provisioner: csi.edgecenter.org
-volumeBindingMode: Immediate
+volumeBindingMode: WaitForFirstConsumer
 reclaimPolicy: Delete
 allowVolumeExpansion: true
 parameters:
   type: standard
+  csi.edgecenter.org/region-id: "10"
   snapshotRestoreEnabled: "true"
+allowedTopologies:
+  - matchLabelExpressions:
+      - key: topology.kubernetes.io/region
+        values:
+          - moscow
 ---
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:
-  name: ec-csi-hiiops
-  annotations:
-    storageclass.kubernetes.io/is-default-class: "true"
+  name: ec-moscow-hiiops
 provisioner: csi.edgecenter.org
-volumeBindingMode: Immediate
+volumeBindingMode: WaitForFirstConsumer
 reclaimPolicy: Delete
 allowVolumeExpansion: true
 parameters:
   type: ssd_hiiops
+  csi.edgecenter.org/region-id: "10"
   snapshotRestoreEnabled: "true"
+allowedTopologies:
+  - matchLabelExpressions:
+      - key: topology.kubernetes.io/region
+        values:
+          - moscow
+---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: ec-moscow-2-standard
+provisioner: csi.edgecenter.org
+volumeBindingMode: WaitForFirstConsumer
+reclaimPolicy: Delete
+allowVolumeExpansion: true
+parameters:
+  type: standard
+  csi.edgecenter.org/region-id: "112"
+  snapshotRestoreEnabled: "true"
+allowedTopologies:
+  - matchLabelExpressions:
+      - key: topology.kubernetes.io/region
+        values:
+          - moscow-2
+---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: ec-moscow-2-hiiops
+provisioner: csi.edgecenter.org
+volumeBindingMode: WaitForFirstConsumer
+reclaimPolicy: Delete
+allowVolumeExpansion: true
+parameters:
+  type: ssd_hiiops
+  csi.edgecenter.org/region-id: "112"
+  snapshotRestoreEnabled: "true"
+allowedTopologies:
+  - matchLabelExpressions:
+      - key: topology.kubernetes.io/region
+        values:
+          - moscow-2
+---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: ec-moscow-3-standard
+provisioner: csi.edgecenter.org
+volumeBindingMode: WaitForFirstConsumer
+reclaimPolicy: Delete
+allowVolumeExpansion: true
+parameters:
+  type: standard
+  csi.edgecenter.org/region-id: "116"
+  snapshotRestoreEnabled: "true"
+allowedTopologies:
+  - matchLabelExpressions:
+      - key: topology.kubernetes.io/region
+        values:
+          - moscow-3
+---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: ec-moscow-3-hiiops
+provisioner: csi.edgecenter.org
+volumeBindingMode: WaitForFirstConsumer
+reclaimPolicy: Delete
+allowVolumeExpansion: true
+parameters:
+  type: ssd_hiiops
+  csi.edgecenter.org/region-id: "116"
+  snapshotRestoreEnabled: "true"
+allowedTopologies:
+  - matchLabelExpressions:
+      - key: topology.kubernetes.io/region
+        values:
+          - moscow-3

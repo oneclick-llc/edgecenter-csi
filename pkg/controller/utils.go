@@ -38,7 +38,7 @@ func volumeMetadata(clusterID string, req *csi.CreateVolumeRequest) edgecloudV2.
 	return md
 }
 
-func prepareCreateResponse(vol *edgecloudV2.Volume, ignoreVolumeAZ bool, accessibleTopologyReq *csi.TopologyRequirement) *csi.CreateVolumeResponse {
+func prepareCreateResponse(vol *edgecloudV2.Volume, ignoreVolumeAZ bool, topologyRegion string, accessibleTopologyReq *csi.TopologyRequirement) *csi.CreateVolumeResponse {
 	var volContentSource *csi.VolumeContentSource
 	if len(vol.SnapshotIDs) > 0 {
 		volContentSource = &csi.VolumeContentSource{
@@ -53,7 +53,11 @@ func prepareCreateResponse(vol *edgecloudV2.Volume, ignoreVolumeAZ bool, accessi
 	// If ignore-volume-az is true, don't set the accessible topology to volume az,
 	// use from preferred topologies instead.
 	var accessibleTopology []*csi.Topology
-	if ignoreVolumeAZ {
+	if topologyRegion != "" {
+		accessibleTopology = []*csi.Topology{{
+			Segments: map[string]string{"topology.kubernetes.io/region": topologyRegion},
+		}}
+	} else if ignoreVolumeAZ {
 		if accessibleTopologyReq != nil {
 			accessibleTopology = accessibleTopologyReq.GetPreferred()
 		}

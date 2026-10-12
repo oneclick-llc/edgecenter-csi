@@ -2,6 +2,7 @@ package node
 
 import (
 	"context"
+	"ec-csi-plugin/pkg/volumeid"
 	"github.com/container-storage-interface/spec/lib/go/csi"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
@@ -42,7 +43,11 @@ func (s *Service) NodeStageVolume(_ context.Context, req *csi.NodeStageVolumeReq
 		return &csi.NodeStageVolumeResponse{}, nil
 	}
 
-	source, err := s.mounter.DevicePathByVolumeID(req.VolumeId)
+	providerID, err := volumeid.ProviderID(req.VolumeId)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "%s: invalid volume handle: %s", methodName, err)
+	}
+	source, err := s.mounter.DevicePathByVolumeID(providerID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "%s: failed to find device path: %s", methodName, err)
 	}
@@ -417,7 +422,11 @@ func (s *Service) NodeExpandVolume(_ context.Context, req *csi.NodeExpandVolumeR
 		return nil, status.Errorf(codes.NotFound, "%s: volume path %q is not mounted", methodName, volumePath)
 	}
 
-	devicePath, err := s.mounter.DevicePathByVolumeID(volumeID)
+	providerID, err := volumeid.ProviderID(volumeID)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "%s: invalid volume handle: %s", methodName, err)
+	}
+	devicePath, err := s.mounter.DevicePathByVolumeID(providerID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "%s: unable to get device path for %q: %s", methodName, volumePath, err)
 	}
@@ -461,9 +470,14 @@ func (s *Service) NodeGetInfo(_ context.Context, _ *csi.NodeGetInfoRequest) (*cs
 	//}
 	//topology := &csi.Topology{Segments: map[string]string{topologyKey: zone}}
 
-	return &csi.NodeGetInfoResponse{
-		NodeId: nodeID,
-		//AccessibleTopology: topology,
+	resp := &csi.NodeGetInfoResponse{
+		NodeId:            nodeID,
 		MaxVolumesPerNode: defaultMaxVolAttachLimit,
-	}, nil
+	}
+	if s.topologyRegion != "" {
+		resp.AccessibleTopology = &csi.Topology{
+			Segments: map[string]string{"topology.kubernetes.io/region": s.topologyRegion},
+		}
+	}
+	return resp, nil
 }

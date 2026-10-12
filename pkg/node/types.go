@@ -14,5 +14,6 @@ type Service struct {
 	log *logrus.Entry
 
 	validateAttachment bool
+	topologyRegion     string
 	csi.UnimplementedNodeServer
 }

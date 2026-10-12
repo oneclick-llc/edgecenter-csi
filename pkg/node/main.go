@@ -7,6 +7,12 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func New(mounter mounter.Interface, metadata metadata.Interface, validateAttachment bool, log *logrus.Entry) csi.NodeServer {
-	return &Service{mounter: mounter, metadata: metadata, validateAttachment: validateAttachment, log: log}
+func New(mounter mounter.Interface, metadata metadata.Interface, validateAttachment bool, topologyRegion string, log *logrus.Entry) csi.NodeServer {
+	return &Service{
+		mounter:            mounter,
+		metadata:           metadata,
+		validateAttachment: validateAttachment,
+		topologyRegion:     topologyRegion,
+		log:                log,
+	}
 }

@@ -6,6 +6,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func New(cloud *edgecloudV2.Client, clusterID string, log *logrus.Entry) csi.ControllerServer {
-	return &Service{cloud: cloud, clusterID: clusterID, log: log}
+func New(cloud *edgecloudV2.Client, clusterID string, topologyRegion string, log *logrus.Entry) csi.ControllerServer {
+	return &Service{cloud: cloud, clusterID: clusterID, topologyRegion: topologyRegion, log: log}
 }

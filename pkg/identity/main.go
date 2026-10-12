@@ -29,6 +29,13 @@ func (s *Service) GetPluginCapabilities(_ context.Context, _ *csi.GetPluginCapab
 				},
 			},
 			{
+				Type: &csi.PluginCapability_Service_{
+					Service: &csi.PluginCapability_Service{
+						Type: csi.PluginCapability_Service_VOLUME_ACCESSIBILITY_CONSTRAINTS,
+					},
+				},
+			},
+			{
 				Type: &csi.PluginCapability_VolumeExpansion_{
 					VolumeExpansion: &csi.PluginCapability_VolumeExpansion{
 						Type: csi.PluginCapability_VolumeExpansion_ONLINE,

@@ -17,16 +17,35 @@ import (
 	"os"
 )
 
-const driverName = "csi.edgecenter.org"
+const defaultDriverName = "csi.edgecenter.org"
 
-func New(cloud *edgecloudV2.Client, clusterID string, validateAttachments bool) NonBlockingGRPCServer {
+func New(clouds map[int]*edgecloudV2.Client, regionTopologies map[int]string, clusterID string, legacyRegionID int64, validateAttachments bool) NonBlockingGRPCServer {
 	d := &Driver{}
 
 	d.log = logrus.New().WithFields(logrus.Fields{})
 
+	driverName := os.Getenv("CSI_DRIVER_NAME")
+	if driverName == "" {
+		driverName = defaultDriverName
+	}
+	topologyRegion := os.Getenv("CSI_TOPOLOGY_REGION")
+	if topologyRegion == "" && len(regionTopologies) == 1 {
+		for _, topology := range regionTopologies {
+			topologyRegion = topology
+		}
+	}
+
 	d.identityServer = identity.New(driverName, version.Version)
-	d.controllerServer = controller.New(cloud, clusterID, d.log)
-	d.nodeServer = node.New(mounter.New(d.log), metadata.New(), validateAttachments, d.log)
+	regions := make([]controller.Region, 0, len(clouds))
+	for regionID, cloud := range clouds {
+		regions = append(regions, controller.Region{
+			ID:       int64(regionID),
+			Topology: regionTopologies[regionID],
+			Cloud:    cloud,
+		})
+	}
+	d.controllerServer = controller.NewMulti(regions, clusterID, legacyRegionID, d.log)
+	d.nodeServer = node.New(mounter.New(d.log), metadata.New(), validateAttachments, topologyRegion, d.log)
 
 	return d
 }

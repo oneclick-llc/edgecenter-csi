@@ -18,9 +18,28 @@ import (
 
 const deleteVolumeTimeout = 25 * time.Second
 
+func (s *Service) validateTopology(req *csi.CreateVolumeRequest) error {
+	if s.topologyRegion == "" || req.GetAccessibilityRequirements() == nil {
+		return nil
+	}
+	requisite := req.GetAccessibilityRequirements().GetRequisite()
+	if len(requisite) == 0 {
+		return nil
+	}
+	for _, topology := range requisite {
+		if topology.GetSegments()["topology.kubernetes.io/region"] == s.topologyRegion {
+			return nil
+		}
+	}
+	return status.Errorf(codes.InvalidArgument, "storage class topology does not include driver region %q", s.topologyRegion)
+}
+
 // CreateVolume creates a new volume from the given request. The function is idempotent.
 func (s *Service) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest) (*csi.CreateVolumeResponse, error) {
 	methodName := "CreateVolume"
+	if err := s.validateTopology(req); err != nil {
+		return nil, err
+	}
 	if req.Name == "" {
 		return nil, status.Errorf(codes.InvalidArgument, "%s: Name must be provided", methodName)
 	}
@@ -56,7 +75,7 @@ func (s *Service) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest
 		if sizeGB != volumes[0].Size {
 			return nil, status.Errorf(codes.AlreadyExists, "%s: volume already exists with same name and different capacity", methodName)
 		}
-		return prepareCreateResponse(&volumes[0], true, req.GetAccessibilityRequirements()), nil
+		return prepareCreateResponse(&volumes[0], true, s.topologyRegion, req.GetAccessibilityRequirements()), nil
 	} else if len(volumes) > 1 {
 		return nil, status.Errorf(codes.Internal, "%s: multiple volumes reported with same name", methodName)
 	}
@@ -105,7 +124,7 @@ func (s *Service) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest
 
 	s.log.Infof("%s SnapshotIDs", volume.SnapshotIDs)
 
-	return prepareCreateResponse(volume, true, req.AccessibilityRequirements), nil
+	return prepareCreateResponse(volume, true, s.topologyRegion, req.AccessibilityRequirements), nil
 }
 
 // DeleteVolume deletes the given volume. The function is idempotent.

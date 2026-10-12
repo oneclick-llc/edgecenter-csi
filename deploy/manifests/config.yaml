@@ -1,17 +1,27 @@
----
-kind: ConfigMap
 apiVersion: v1
+kind: ConfigMap
 metadata:
   name: ec-csi-plugin-config
   namespace: kube-system
 data:
   CLUSTER_ID: "__K8S_CLUSTER_ID__"
 ---
-kind: Secret
 apiVersion: v1
+kind: Secret
 metadata:
   name: ec-csi-plugin-config
   namespace: kube-system
 type: Opaque
-data:
-  config.yaml: YXBpVXJsOiBfX0NMT1VEX0FQSV9VUkxfXwpwcm9qZWN0SUQ6IF9fUFJPSkVDVF9JRF9fCnJlZ2lvbklEOiBfX1JFR0lPTl9JRF9fCmFwaVRva2VuOiBfX0FQSV9UT0tFTl9f
+stringData:
+  config.yaml: |
+    apiUrl: __CLOUD_API_URL__
+    projectID: __PROJECT_ID__
+    regionID: 10
+    apiToken: __API_TOKEN__
+    regions:
+      - regionID: 10
+        topology: moscow
+      - regionID: 112
+        topology: moscow-2
+      - regionID: 116
+        topology: moscow-3

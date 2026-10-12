@@ -1,6 +1,7 @@
 package node
 
 import (
+	"ec-csi-plugin/pkg/volumeid"
 	"fmt"
 	"path/filepath"
 	"strings"
@@ -8,7 +9,11 @@ import (
 
 // findAbsoluteDeviceByIDPath follows the /dev/disk/by-id symlink to find the absolute path of a device
 func (s *Service) findAbsoluteDeviceByIDPath(volumeID string) (string, error) {
-	path, err := s.mounter.DevicePathByVolumeID(volumeID)
+	providerID, err := volumeid.ProviderID(volumeID)
+	if err != nil {
+		return "", fmt.Errorf("invalid volume handle: %w", err)
+	}
+	path, err := s.mounter.DevicePathByVolumeID(providerID)
 	if err != nil {
 		return "", fmt.Errorf("cannot find device path: %w", err)
 	}
