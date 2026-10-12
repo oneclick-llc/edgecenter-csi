@@ -5,7 +5,6 @@ import (
 	"errors"
 	"net/http"
 	"strings"
-	"time"
 
 	edgecloudV2 "github.com/Edge-Center/edgecentercloud-go/v2"
 	"github.com/Edge-Center/edgecentercloud-go/v2/util"
@@ -16,7 +15,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-const deleteVolumeTimeout = 25 * time.Second
+const deleteVolumeTimeout = defaultTaskTimeout
 
 func (s *Service) validateTopology(req *csi.CreateVolumeRequest) error {
 	if s.topologyRegion == "" || req.GetAccessibilityRequirements() == nil {
